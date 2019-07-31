@@ -30,20 +30,24 @@ function verifyGithubPayload (req, res, next) {
 
 
 function eventHandler (req, res) {
+  const eventType = req.headers['X-GitHub-Event'];
   const repoRef = req.body.ref;
   const repoGitUrl = req.body.repository.git_url;
   const pushedBranch = repoRef.split('/').pop();
   const pullBranch = process.env.PULL_BRANCH || 'master';
   const gitPull = `git checkout -- ./ && git pull -X theirs ${repoGitUrl} ${pullBranch} && refresh`;
-
-  if (repoRef !== `refs/heads/${pullBranch}`) {
-    return res.send(`No deployment for this event. Push was to ${pushedBranch} branch, but Glitch is set to pull ${pullBranch}.`)
-  } else {
-    console.log('Fetching updates...');
-    const output = execSync(gitPull).toString();
-    console.log(output);
-    return res.send(`Repo ${pullBranch} branch successfully deployed to Glitch.`);
+  
+  if (eventType !== 'push') {
+    return res.status(202).send(`Acknowledged ${eventType} event from GitHub.`);
   }
+
+  if (repoRef === `refs/heads/${pullBranch}`) {
+    console.log('Fetching updates...');
+    console.log(execSync(gitPull).toString());
+    return res.status(200).send(`Repo ${pushedBranch} branch successfully deployed to Glitch.`);
+  } 
+  
+  res.status(202).send(`No deployment for this event. Push was to ${pushedBranch} branch, but Glitch is set to pull ${pullBranch}.`)
   
 };
 
