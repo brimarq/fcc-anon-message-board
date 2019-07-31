@@ -1,0 +1,40 @@
+{
+	"name": "fcc-anon-message-board",
+	"version": "0.0.1",
+	"description": "Anonymous Message Board project for the freeCodeCamp Information Security and Quality Assurance Certification",
+	"author": "Brian Marquis",
+	"private": true,
+	"main": "server.js",
+	"scripts": {
+		"start": "node server.js",
+		"dev": "nodemon server.js"
+	}, 
+	"dependencies": {
+		"chai": "^4.2.0",
+		"chai-http": "^4.3.0",
+		"cors": "^2.8.5",
+		"dotenv": "^8.0.0",
+		"express": "^4.17.1",
+		"helmet": "^3.20.0",
+		"mocha": "^6.2.0",
+		"mongodb": "^3.2.1",
+		"mongoose": "^5.6.7",
+		"zombie": "^6.1.4"
+	},
+	"devDependencies": {
+		"nodemon": "^1.18.10"
+	}, 
+	"engines": {
+		"node": "10.x"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/brimarq/fcc-anon-message-board.git"
+	},
+	"keywords": [
+		"node",
+		"glitch",
+		"express"
+	], 
+	"license": "MIT"
+}
