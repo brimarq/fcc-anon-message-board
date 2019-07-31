@@ -31,7 +31,7 @@ function verifyGithubPayload (req, res, next) {
 
 function eventHandler (req, res) {
   const pullBranch = process.env.PULL_BRANCH || 'master';
-  const eventType = req.headers['X-GitHub-Event'];
+  const eventType = req.headers['x-github-event'];
   let repoRef, repoGitUrl, pushedBranch, gitPull;
   
   if (eventType !== 'push') {
