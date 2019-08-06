@@ -11,6 +11,15 @@ const runner = require('./test-runner');
 
 const app = express();
 
+// Set up mongoose connection
+const mongoose = require('mongoose');
+mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useFindAndModify: false });
+const db = mongoose.connection;
+// console.log({Connection: db});
+db.on('connected', () => console.log('MongoDB connection successfully established.'));
+db.on('disconnected', () => console.log('MongoDB connection closed.'));
+db.on('error', console.error.bind(console, 'MongoDB connection error:'));
+
 app.use(helmet({
   frameguard: { action: 'sameorigin' },
   dnsPrefetchControl: { allow: false },
