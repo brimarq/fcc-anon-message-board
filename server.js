@@ -4,6 +4,8 @@ const express = require('express');
 // const expect = require('chai').expect;
 const cors = require('cors');
 const helmet = require('helmet');
+var debug = require('debug')('fcc-anon-message-board:server');
+const logger = require('morgan');
 const apiRoutes = require('./routes/api.js');
 const fccTestingRoutes = require('./routes/fcctesting.js');
 const glitchDeployRoute = require('./routes/glitch-deploy');
@@ -15,9 +17,8 @@ const app = express();
 const mongoose = require('mongoose');
 mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useFindAndModify: false });
 const db = mongoose.connection;
-// console.log({Connection: db});
-db.on('connected', () => console.log('MongoDB connection successfully established.'));
-db.on('disconnected', () => console.log('MongoDB connection closed.'));
+// db.on('connected', console.log.bind(console, 'MongoDB connection successfully established.'));
+// db.on('disconnected', console.log.bind(console, 'MongoDB connection closed.'));
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 
 app.use(helmet({
@@ -29,7 +30,7 @@ app.use(helmet({
 app.use('/public', express.static(process.cwd() + '/public'));
 
 app.use(cors({origin: '*'})); //For FCC testing purposes only
-
+app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -66,7 +67,7 @@ app.use(function(req, res, next) {
 
 //Start our server and tests!
 app.listen(process.env.PORT || 3000, function () {
-  console.log("Listening on port " + this.address().port);
+  debug("Listening on port " + this.address().port);
   if(process.env.NODE_ENV === 'test') {
     console.log('Running Tests...');
     setTimeout(function () {
