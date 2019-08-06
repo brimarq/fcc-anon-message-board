@@ -20,7 +20,7 @@ ThreadSchema.methods.getPublicFields = function () {
   const returnObject = {
     _id: this._id,
     text: this.text,
-    replies: this.replies,
+    replies: this.replies.map(reply => reply.getPublicFields()),
     created_on: this.created_on,
     bumped_on: this.bumped_on
   };
