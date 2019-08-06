@@ -7,7 +7,7 @@
 	"main": "server.js",
 	"scripts": {
 		"start": "node server.js",
-		"dev": "nodemon server.js",
+		"dev": "DEBUG=fcc-anon-message-board:* nodemon server.js",
 		"seed": "DEBUG=mongo-seeding node ./util/seeder"
 	},
 	"dependencies": {
