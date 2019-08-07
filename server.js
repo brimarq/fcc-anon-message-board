@@ -10,6 +10,7 @@ const apiRoutes = require('./routes/api.js');
 const fccTestingRoutes = require('./routes/fcctesting.js');
 const glitchDeployRoute = require('./routes/glitch-deploy');
 const runner = require('./test-runner');
+const seeder = require('./util/seeder');
 
 const app = express();
 
@@ -57,6 +58,9 @@ fccTestingRoutes(app);
 apiRoutes(app);
 
 glitchDeployRoute(app);
+
+// seeder.createThreads();
+
 
 //404 Not Found Middleware
 app.use(function(req, res, next) {
