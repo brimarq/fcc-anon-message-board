@@ -7,8 +7,7 @@
 	"main": "server.js",
 	"scripts": {
 		"start": "node server.js",
-		"dev": "DEBUG=fcc-anon-message-board:* nodemon server.js",
-		"seed": "DEBUG=mongo-seeding node ./util/seeder"
+		"dev": "DEBUG=fcc-anon-message-board:* nodemon server.js"
 	},
 	"dependencies": {
 		"chai": "^4.2.0",
@@ -26,7 +25,6 @@
 		"zombie": "^6.1.4"
 	},
 	"devDependencies": {
-		"mongo-seeding": "^3.3.0-alpha.0",
 		"nodemon": "^1.18.10"
 	},
 	"engines": {
