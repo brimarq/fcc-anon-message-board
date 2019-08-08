@@ -1,42 +1,38 @@
-// if (!process.env.MONGODB_URI) require('dotenv').config();
-
-const faker = require('faker/locale/en');
+require('dotenv').config();
+const { MONGODB_URI } = process.env;
+const mongoose = require('mongoose');
+const fakethreads = require('./fakethreads');
 const Thread = require('../models/thread');
 
-const config = {
-  boardName: 'test',
-  deletePassword: 'pass',
-  numThreads: 12,
-  maxNumRepliesEach: 6
-};
+mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useFindAndModify: false });
+const conn = mongoose.connection;
+conn.on('connected', console.log.bind(console, 'MongoDB connection successfully established.'));
+conn.on('disconnected', console.log.bind(console, 'MongoDB connection closed.'));
+conn.on('error', console.error.bind(console, 'MongoDB connection error:'));
 
-function makeReplyObj(delete_password, threadDate) {
-  const text = faker.hacker.phrase();
-  const created_on = faker.date.between(threadDate, new Date());
+
+conn.on('connected', async function() { 
+  const threads = fakethreads.createThreadObjArr();
+  try {
+    const isThreadsCollection = await conn.db.listCollections({ name: 'threads' })
+      .toArray()
+      .then(results => results.length ? true : false);
+
+    if (isThreadsCollection) {
+      await conn.dropCollection('threads')
+      .then(() => console.log('Previous threads collection dropped.'));
+    }
+
+    await Thread.create(threads, {timestamps: false})
+      .then(threads => {
+        console.log(`*** DB POPULATED with ${threads.length} new threads for board ${threads[0].board}`);
+      });
+
+    conn.close();
+
+  } catch(err) {
+    throw err;
+  }
   
-  return ({ text, delete_password, created_on });
-}
+});
 
-function makeThreadObj(board, delete_password, numReplies) {
-  const text = faker.hacker.phrase(); 
-  const created_on = faker.date.recent(14);
-  const replies = [...Array(numReplies)]
-    .map(e => makeReplyObj(delete_password, created_on))
-    .sort((a, b) => a.created_on - b.created_on); // asc date sort
-  const bumped_on = numReplies ? replies[(numReplies - 1)].created_on : created_on;
-  return ({ board, text, replies, delete_password, created_on, bumped_on });
-}
-
-function createThreads(
-  boardName = config.boardName, 
-  deletePassword = config.deletePassword, 
-  numThreads = config.numThreads, 
-  maxNumRepliesEach = config.maxNumRepliesEach
-  ) {
-  const numReplies = faker.random.number(maxNumRepliesEach);
-  const threadsArr = [...Array(numThreads)].map(e => makeThreadObj(boardName, deletePassword, numReplies));
-  return Thread.create(threadsArr, {timestamps: false}, (err, threads) => err ? err : console.log(`*** DB POPULATED with ${threads.length} threads to ${boardName}`))
-  
-}
-
-module.exports = { createThreads }
