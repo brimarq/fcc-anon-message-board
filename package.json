@@ -7,7 +7,8 @@
 	"main": "server.js",
 	"scripts": {
 		"start": "node server.js",
-		"dev": "DEBUG=fcc-anon-message-board:* nodemon server.js"
+		"dev": "nodemon -r dotenv/config server.js",
+		"seeder": "node ./util/seeder.js"
 	},
 	"dependencies": {
 		"chai": "^4.2.0",
