@@ -8,7 +8,8 @@
 	"scripts": {
 		"start": "node server.js",
 		"dev": "nodemon -r dotenv/config server.js",
-		"seeder": "node ./util/seeder.js"
+		"dev-debug": "DEBUG=server:* nodemon -r dotenv/config server.js",
+		"seeder": "DEBUG=seeder:* node ./util/seeder.js"
 	},
 	"dependencies": {
 		"chai": "^4.2.0",
