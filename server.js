@@ -1,7 +1,6 @@
 'use strict';
 const { MONGODB_URI, NODE_ENV, PORT } = process.env;
 const express = require('express');
-// const expect = require('chai').expect;
 const cors = require('cors');
 const helmet = require('helmet');
 const logger = require('morgan');
