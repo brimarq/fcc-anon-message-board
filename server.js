@@ -29,7 +29,7 @@ app.use(helmet({
 app.use('/public', express.static(process.cwd() + '/public'));
 
 app.use(cors({origin: '*'})); //For FCC testing purposes only
-app.use(logger('dev'));
+if (NODE_ENV === 'development') app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
