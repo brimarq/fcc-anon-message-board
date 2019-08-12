@@ -1,8 +1,8 @@
 const config = {
-  boardName: 'test',
+  boardName: 'general',
   deletePassword: 'pass',
   numThreads: 12,
-  maxNumRepliesEach: 6
+  numRepliesEach: 4
 };
 
 const faker = require('faker/locale/en');
@@ -28,9 +28,9 @@ function createThreadObjArr(
   boardName = config.boardName, 
   deletePassword = config.deletePassword, 
   numThreads = config.numThreads, 
-  maxNumRepliesEach = config.maxNumRepliesEach
+  numRepliesEach = config.numRepliesEach
   ) {
-  const numReplies = faker.random.number(maxNumRepliesEach);
+  const numReplies = numRepliesEach;
   const threadsArr = [...Array(numThreads)].map(
     e => makeThreadObj(boardName, deletePassword, numReplies)
   );
