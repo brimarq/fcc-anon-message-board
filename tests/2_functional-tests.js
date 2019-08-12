@@ -10,44 +10,78 @@ var chaiHttp = require('chai-http');
 var chai = require('chai');
 var assert = chai.assert;
 var server = require('../server');
+const Thread = require('../models/thread');
+const fakethreads = require('../util/fakethreads');
+const debug = require('debug')('app:func-tests');
+const log = {
+  setup: debug.extend('setup'),
+  teardown: debug.extend('teardown'),
+  err: debug.extend('error')
+};
 
 chai.use(chaiHttp);
 
 suite('Functional Tests', function() {
 
-  const delPasswd = 'testpass';
-  const testThreadText = 'This is a test thread.';
-  const testReplyText = 'This is a test reply.';
-  let testThreadId, testReplyId;
+  const data = {
+    board: 'test',
+    deletePassword: 'testpass',
+    threadText: 'This is a test thread.',
+    replyText: 'This is a test reply.',
+    ids: []
+  };
 
-  // suiteSetup(async function () {
+  const seedThreads = fakethreads.createThreadObjArr(data.board, data.deletePassword);
+
+  suiteSetup(async function () {
+    try {
+      const seeded = await Thread.create(seedThreads);
+
+      if (seeded) {
+        seeded.forEach(thread => {
+          let replyIds = [];
+          thread.replies.forEach(reply => replyIds.push(reply._id));
+          data.ids.push({thread: thread._id, replies: replyIds});
+        });
+        // log.setup(ids);
+        return log.setup(`DB seeded with ${seeded.length} threads for board '${seeded[0].board}'.`);
+      }
+      
+      return log.err('Error: Seeding DB failed.');
+
+    } catch(err) {
+      return log.err(err.message);
+    }    
+
+  });
+
+  suiteTeardown(async function () {
+    try{
+      const cleaned = await Thread.deleteMany({ board: { $eq: 'test' } });
+      
+      if (cleaned) {
+        data.ids = [];
+        return log.teardown(`${cleaned.deletedCount} test threads cleaned from DB.`);
+      }
+
+      log.err('Test threads NOT cleaned from DB.');
+
+    } catch(err) {
+      return log.err(err.message);
+    }
     
-  //   try {
-
-  //     const booksCount = await Book.estimatedDocumentCount();
-  //     if (booksCount) return;
-  //     fakebook.populateBooks();
-
-  //   } catch(err) {
-  //     throw err;
-  //   }    
-
-  // });
-
-  // suiteTeardown(function () {
-  //   Book.deleteMany({title: {$eq: testBookTitle}}, err => {if (err) {throw err;}});
-  // });
+  });
 
   suite('API ROUTING FOR /api/threads/:board', function() {
     
     suite('POST', function() {
 
-      test('Thread to a specific message board', function(done) {
+      test('Post a thread to a specific message board', function(done) {
         chai.request(server)
         .post('/api/threads/test')
         .send({
-          text: testThreadText,
-          delete_password: delPasswd
+          text: data.threadText,
+          delete_password: data.delPassword
         })
         .end(function(err, res){
           assert.equal(res.status, 200);
@@ -60,7 +94,7 @@ suite('Functional Tests', function() {
     
     suite('GET', function() {
       
-      test('Ten most recently bumped threads (<= 3 most recent replies each )', function(done) {
+      test('Get ten most recently bumped threads (<= 3 most recent replies each )', function(done) {
         chai.request(server)
         .get('/api/threads/test')
         .query({})
@@ -78,7 +112,7 @@ suite('Functional Tests', function() {
           assert.notProperty(res.body[0], 'reported', 'Thread should NOT include \'reported\' property.');
           assert.isArray(res.body[0].replies, '\'replies\' property should be an array.');
           assert.isBelow(res.body[0].replies.length, 4, 'Return <= 3 replies per thread.');
-          testThreadId = res.body[0]._id;
+          data.postedThreadId = res.body[0]._id;
           done();
         });
       });
@@ -91,8 +125,8 @@ suite('Functional Tests', function() {
         chai.request(server)
         .delete('/api/threads/test')
         .send({
-          thread_id: testThreadId,
-          delete_password: 'drowssap'
+          thread_id: data.ids[0].thread,
+          delete_password: 'wrongpassword'
         })
         .end(function(err, res){
           assert.equal(res.status, 200);
@@ -105,12 +139,13 @@ suite('Functional Tests', function() {
         chai.request(server)
         .delete('/api/threads/test')
         .send({
-          thread_id: testThreadId,
-          delete_password: delPasswd
+          thread_id: data.ids[0].thread,
+          delete_password: data.deletePassword
         })
         .end(function(err, res){
           assert.equal(res.status, 200);
           assert.equal(res.text, 'success');
+          data.ids.shift();
           done();
         });
       });
@@ -119,15 +154,16 @@ suite('Functional Tests', function() {
     
     suite('PUT', function() {
 
-      test('Report a reply', function(done) {
+      test('Report a thread', function(done) {
         chai.request(server)
-        .put('/api/replies/test')
+        .put('/api/threads/test')
         .send({
-          thread_id: testThreadId
+          thread_id: data.ids[0].thread
         })
         .end(function(err, res){
           assert.equal(res.status, 200);
-          assert.equal(res.text, 'success'); // fcc tester expects 'reported'
+          assert.equal(res.text, 'success'); // fcc tester expects 'reported' (board === 'fcc')
+          data.ids.shift();
           done();
         });
       });
@@ -145,9 +181,9 @@ suite('Functional Tests', function() {
         chai.request(server)
         .post('/api/replies/test')
         .send({
-          text: testReplyText,
-          delete_password: delPasswd,
-          thread_id: testThreadId
+          text: data.replyText,
+          delete_password: data.deletePassword,
+          thread_id: data.postedThreadId
         })
         .end(function(err, res){
           assert.equal(res.status, 200);
@@ -163,7 +199,7 @@ suite('Functional Tests', function() {
       test('GET an entire thread with all its replies.', function(done) {
         chai.request(server)
         .get('/api/replies/test')
-        .query({ thread_id: testThreadId })
+        .query({ thread_id: data.postedThreadId })
         .end(function(err, res){
           assert.equal(res.status, 200);
           assert.property(res.body, '_id', 'Thread should include \'_id\' property.');
@@ -179,8 +215,8 @@ suite('Functional Tests', function() {
           assert.property(res.body.replies[0], 'created_on', 'Reply should include \'created_on\' property.');
           assert.notProperty(res.body.replies[0], 'delete_password', 'Reply should NOT include \'delete_password\' property.');
           assert.notProperty(res.body.replies[0], 'reported', 'Reply should NOT include \'reported\' property.');
-          assert.equal(res.body.replies[0].text, testReplyText);
-          testReplyId = res.body.replies[0]._id;
+          assert.equal(res.body.replies[0].text, data.replyText);
+          data.postedReplyId = res.body.replies[0]._id;
           done();
         });
       });
@@ -193,12 +229,12 @@ suite('Functional Tests', function() {
         chai.request(server)
         .put('/api/replies/test')
         .send({
-          thread_id: testThreadId,
-          reply_id: testReplyId
+          thread_id: data.postedThreadId,
+          reply_id: data.postedReplyId
         })
         .end(function(err, res){
           assert.equal(res.status, 200);
-          assert.equal(res.text, 'success'); // fcc tester expects 'reported'
+          assert.equal(res.text, 'success'); // fcc tester expects 'reported' on success (board === 'fcc')
           done();
         });
       });
@@ -211,9 +247,9 @@ suite('Functional Tests', function() {
         chai.request(server)
         .delete('/api/replies/test')
         .send({
-          thread_id: testThreadId,
-          reply_id: testReplyId,
-          delete_password: 'drowssap'
+          thread_id: data.postedThreadId,
+          reply_id: data.postedReplyId,
+          delete_password: 'wrongpassword'
         })
         .end(function(err, res){
           assert.equal(res.status, 200);
@@ -226,9 +262,9 @@ suite('Functional Tests', function() {
         chai.request(server)
         .delete('/api/replies/test')
         .send({
-          thread_id: testThreadId,
-          reply_id: testReplyId,
-          delete_password: delPasswd
+          thread_id: data.postedThreadId,
+          reply_id: data.postedReplyId,
+          delete_password: data.deletePassword
         })
         .end(function(err, res){
           assert.equal(res.status, 200);
@@ -240,7 +276,7 @@ suite('Functional Tests', function() {
       test('\'Deleted\' reply text = \'[deleted]\'.', function(done) {
         chai.request(server)
         .get('/api/replies/test')
-        .query({ thread_id: testThreadId })
+        .query({ thread_id: data.postedThreadId })
         .end(function(err, res){
           assert.equal(res.status, 200);
           assert.equal(res.body.replies[0].text, '[deleted]');
